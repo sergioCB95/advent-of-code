@@ -21,7 +21,6 @@ fs.readFile('./data.txt', 'utf8', (err, data) => {
         boards = boards.filter(board => !matchBingo(board));
 
         if (boards.length === 0) {
-            console.log(lastBoards[0])
             const sum = lastBoards[0]
                 .flat()
                 .filter(number => !number.marked)
