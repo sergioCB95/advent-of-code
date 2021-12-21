@@ -1,35 +1,50 @@
 const fs = require('fs');
 
 fs.readFile('./data.txt', 'utf8', (err, data) => {
+    let max = 0;
     const result = data
         .split('\n')
         .filter(line => line.length)
         .map(line => JSON.parse(line))
-        .reduce((acc, curr) => {
-            const result = [acc, curr];
-            let explosiveNumber = findExplosiveNumber(result);
-            let numberToSplit = false;
-            if (!explosiveNumber) {
-                numberToSplit = findSplitNumber(result);
-            }
 
-            while (explosiveNumber || numberToSplit) {
-                if (explosiveNumber) {
-                    shareExplodedNumber(result, ...explosiveNumber);
-                } else if (numberToSplit) {
-                    splitNumber(...numberToSplit);
-                }
-                explosiveNumber = findExplosiveNumber(result);
-                if (!explosiveNumber) {
-                    numberToSplit = findSplitNumber(result);
-                }
+    result.forEach((x, i) => {
+        result.forEach((y, j) => {
+            const xCopy = deepCopy(x);
+            const yCopy = deepCopy(y);
+            if (i !== j) {
+                const res = sum(xCopy, yCopy);
+                const magnitude = getMagnitude(res);
+                console.log(JSON.stringify(res, null, 0));
+                console.log(magnitude);
+                max = Math.max(magnitude, max);
             }
-            console.log(JSON.stringify(result, null, 0));
-            return result;
         });
-    console.log(JSON.stringify(result, null, 0));
-    console.log(getMagnitude(result));
+    });
+
+    console.log(max);
 });
+
+const sum = (x, y) => {
+    const result = [x, y];
+    let explosiveNumber = findExplosiveNumber(result);
+    let numberToSplit = false;
+    if (!explosiveNumber) {
+        numberToSplit = findSplitNumber(result);
+    }
+
+    while (explosiveNumber || numberToSplit) {
+        if (explosiveNumber) {
+            shareExplodedNumber(result, ...explosiveNumber);
+        } else if (numberToSplit) {
+            splitNumber(...numberToSplit);
+        }
+        explosiveNumber = findExplosiveNumber(result);
+        if (!explosiveNumber) {
+            numberToSplit = findSplitNumber(result);
+        }
+    }
+    return result;
+}
 
 const findAndSum = (closeNum, addedNum, path, prev) => {
     if (closeNum[path] !== undefined) {
@@ -111,3 +126,6 @@ const getMagnitude = (num) => {
     }
     return (3 * getMagnitude(num[0])) + (2 * getMagnitude(num[1]));
 }
+
+
+const deepCopy = (num) => num.map(item => Array.isArray(item) ? deepCopy(item) : item);
