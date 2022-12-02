@@ -36,18 +36,7 @@ const ResultScore = {
     [Result.Player2]: 6,
 }
 
-const getPlayerWinner = (player1, player2) => {
-    if (player1 === player2) {
-        return Result.Draw;
-    } else if (player1 === Action.Rock && player2 === Action.Scissor
-        || player1 === Action.Paper && player2 === Action.Rock
-        || player1 === Action.Scissor && player2 === Action.Paper) {
-        return Result.Player1;
-    }
-    return Result.Player2;
-}
-
-const gessMyAction = (player1, result) => {
+const guessMyAction = (player1, result) => {
     if (result === Result.Draw) {
         return player1;
     }
@@ -74,7 +63,7 @@ const gessMyAction = (player1, result) => {
 fs.readFile('./data.txt', 'utf8', (err, data) => {
     const games = data.split('\n').filter(line => line.length).map(line => line.split(' '));
     const result = games.reduce((acc, [opponent, me]) => {
-        const myAction = gessMyAction(OpponentAction[opponent], MyResult[me]);
+        const myAction = guessMyAction(OpponentAction[opponent], MyResult[me]);
         const score = ActionScore[myAction] + ResultScore[MyResult[me]];
         return acc + score;
     },0);
