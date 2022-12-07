@@ -33,6 +33,40 @@ func getFullName(dirName string, insideDirs []*Dir) string {
 	return name
 }
 
+func moveDirCommand(args []string, dirs []*Dir, insideDirs []*Dir) (newDirs []*Dir, newInsideDirs []*Dir) {
+	newDirs = dirs
+	newInsideDirs = insideDirs
+	if args[1] == "cd" {
+		if args[2] == ".." {
+			if len(newInsideDirs) > 0 {
+				newInsideDirs = append([]*Dir{}, newInsideDirs[:len(newInsideDirs)-1]...)
+			}
+		} else {
+			isNewDir := true
+			for _, dir := range newDirs {
+				if dir.name == getFullName(args[2], newInsideDirs) {
+					isNewDir = false
+					newInsideDirs = append(newInsideDirs, dir)
+				}
+			}
+			if isNewDir {
+				name := getFullName(args[2], newInsideDirs)
+				dir := Dir{name: name, size: 0}
+				newDirs = append(newDirs, &dir)
+				newInsideDirs = append(newInsideDirs, &dir)
+			}
+		}
+	}
+	return newDirs, newInsideDirs
+}
+
+func addFileSize(fileSize string, insideDirs []*Dir) {
+	fs, _ := strconv.Atoi(fileSize)
+	for _, dir := range insideDirs {
+		dir.size += fs
+	}
+}
+
 func main() {
 	sum := 0
 	var dirs []*Dir
@@ -45,32 +79,9 @@ func main() {
 		}
 		args := strings.Split(line, " ")
 		if args[0] == "$" {
-			if args[1] == "cd" {
-				if args[2] == ".." {
-					if len(insideDirs) > 0 {
-						insideDirs = append([]*Dir{}, insideDirs[:len(insideDirs)-1]...)
-					}
-				} else {
-					isNewDir := true
-					for _, dir := range dirs {
-						if dir.name == getFullName(args[2], insideDirs) {
-							isNewDir = false
-							insideDirs = append(insideDirs, dir)
-						}
-					}
-					if isNewDir {
-						name := getFullName(args[2], insideDirs)
-						dir := Dir{name: name, size: 0}
-						dirs = append(dirs, &dir)
-						insideDirs = append(insideDirs, &dir)
-					}
-				}
-			}
+			dirs, insideDirs = moveDirCommand(args, dirs, insideDirs)
 		} else if args[0] != "dir" {
-			fileSize, _ := strconv.Atoi(args[0])
-			for _, dir := range insideDirs {
-				dir.size += fileSize
-			}
+			addFileSize(args[0], insideDirs)
 		}
 	}
 	for _, dir := range dirs {
