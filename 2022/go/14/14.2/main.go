@@ -6,18 +6,87 @@ import (
 	"strings"
 )
 
+type BinaryNode struct {
+	left  *BinaryNode
+	right *BinaryNode
+	data  Coord
+}
+
+type BinaryTree struct {
+	root *BinaryNode
+}
+
+func (t *BinaryTree) insert(data Coord) *BinaryTree {
+	if t.root == nil {
+		t.root = &BinaryNode{data: data, left: nil, right: nil}
+	} else {
+		t.root.insert(data)
+	}
+	return t
+}
+
+func (n *BinaryNode) insert(data Coord) {
+	if n == nil {
+		return
+	} else if data.x < n.data.x {
+		if n.left == nil {
+			n.left = &BinaryNode{data: data, left: nil, right: nil}
+		} else {
+			n.left.insert(data)
+		}
+	} else if data.x == n.data.x {
+		if data.y <= n.data.y {
+			if n.left == nil {
+				n.left = &BinaryNode{data: data, left: nil, right: nil}
+			} else {
+				n.left.insert(data)
+			}
+		} else {
+			if n.right == nil {
+				n.right = &BinaryNode{data: data, left: nil, right: nil}
+			} else {
+				n.right.insert(data)
+			}
+		}
+	} else {
+		if n.right == nil {
+			n.right = &BinaryNode{data: data, left: nil, right: nil}
+		} else {
+			n.right.insert(data)
+		}
+	}
+}
+
+func (t *BinaryTree) search(data Coord) bool {
+	if t.root == nil {
+		return false
+	} else {
+		return t.root.search(data)
+	}
+}
+
+func (n *BinaryNode) search(data Coord) bool {
+	if n == nil {
+		return false
+	} else if data.x < n.data.x {
+		return n.left.search(data)
+	} else if data.x == n.data.x {
+		if data.y < n.data.y {
+			return n.left.search(data)
+		} else if data.y > n.data.y {
+			return n.right.search(data)
+		} else {
+			return true
+		}
+	} else {
+		return n.right.search(data)
+	}
+}
+
 type Coord struct {
 	x int
 	y int
 }
-
-type Space rune
-
-const (
-	Empty Space = '.'
-	Sand        = 'O'
-	Rock        = 'X'
-)
 
 func getFileAsString(fileName string) string {
 	data, err := ioutil.ReadFile(fileName)
@@ -46,7 +115,8 @@ func getRockStructureCoords(input string) (rockStructureCoordsList [][]Coord) {
 	return
 }
 
-func fillGrid(rockStructureCoordsList [][]Coord, grid [][]Space) [][]Space {
+func fillRocks(rockStructureCoordsList [][]Coord) *BinaryTree {
+	rockList := &BinaryTree{}
 	for _, rockStructureCoords := range rockStructureCoordsList {
 		for i, _ := range rockStructureCoords {
 			if i == 0 {
@@ -64,7 +134,7 @@ func fillGrid(rockStructureCoordsList [][]Coord, grid [][]Space) [][]Space {
 					big = coord1.y
 				}
 				for j := small; j <= big; j++ {
-					grid[j][coord1.x] = Rock
+					rockList.insert(Coord{x: coord1.x, y: j})
 				}
 			} else if coord1.y == coord2.y {
 				var small, big int
@@ -76,45 +146,7 @@ func fillGrid(rockStructureCoordsList [][]Coord, grid [][]Space) [][]Space {
 					big = coord1.x
 				}
 				for j := small; j <= big; j++ {
-					grid[coord1.y][j] = Rock
-				}
-			}
-		}
-	}
-	return grid
-}
-
-func fillRocks(rockStructureCoordsList [][]Coord) (rockList []Coord) {
-	for _, rockStructureCoords := range rockStructureCoordsList {
-		for i, _ := range rockStructureCoords {
-			if i == 0 {
-				continue
-			}
-			coord1 := rockStructureCoords[i-1]
-			coord2 := rockStructureCoords[i]
-			if coord1.x == coord2.x {
-				var small, big int
-				if coord1.y < coord2.y {
-					small = coord1.y
-					big = coord2.y
-				} else {
-					small = coord2.y
-					big = coord1.y
-				}
-				for j := small; j <= big; j++ {
-					rockList = append(rockList, Coord{x: coord1.x, y: j})
-				}
-			} else if coord1.y == coord2.y {
-				var small, big int
-				if coord1.x < coord2.x {
-					small = coord1.x
-					big = coord2.x
-				} else {
-					small = coord2.x
-					big = coord1.x
-				}
-				for j := small; j <= big; j++ {
-					rockList = append(rockList, Coord{x: j, y: coord1.y})
+					rockList.insert(Coord{x: j, y: coord1.y})
 				}
 			}
 		}
@@ -122,30 +154,9 @@ func fillRocks(rockStructureCoordsList [][]Coord) (rockList []Coord) {
 	return rockList
 }
 
-func printGrid(grid [][]Space) {
-	for _, row := range grid {
-		for _, r := range row {
-			print(string(r))
-		}
-		println()
-	}
-}
-
-func findCoordInList(x int, y int, coordList []Coord) bool {
-	coord := Coord{x: x, y: y}
-	for _, c := range coordList {
-		if c.x == coord.x && c.y == coord.y {
-			return true
-		}
-	}
-	return false
-}
-
 func main() {
 	sum := 0
 	var maxY int
-	var grid [][]Space
-	var rockList, sandList []Coord
 	input := getFileAsString("../data.txt")
 	rockStructureCoordsList := getRockStructureCoords(input)
 	for _, rockStructureCoords := range rockStructureCoordsList {
@@ -157,7 +168,7 @@ func main() {
 		}
 	}
 	maxY += 2
-	rockList = fillRocks(rockStructureCoordsList)
+	notEmptyList := fillRocks(rockStructureCoordsList)
 	fall := false
 	for !fall {
 		pos := Coord{x: 500, y: 0}
@@ -166,25 +177,23 @@ func main() {
 			if maxY == pos.y+1 {
 				sum++
 				stuck = true
-				sandList = append(sandList, pos)
+				notEmptyList.insert(pos)
 			}
-			if !findCoordInList(pos.x, pos.y+1, rockList) && !findCoordInList(pos.x, pos.y+1, sandList) {
+			if !notEmptyList.search(Coord{x: pos.x, y: pos.y + 1}) {
 				pos = Coord{x: pos.x, y: pos.y + 1}
-			} else if !findCoordInList(pos.x-1, pos.y+1, rockList) && !findCoordInList(pos.x-1, pos.y+1, sandList) {
+			} else if !notEmptyList.search(Coord{x: pos.x - 1, y: pos.y + 1}) {
 				pos = Coord{x: pos.x - 1, y: pos.y + 1}
-			} else if !findCoordInList(pos.x+1, pos.y+1, rockList) && !findCoordInList(pos.x+1, pos.y+1, sandList) {
+			} else if !notEmptyList.search(Coord{x: pos.x + 1, y: pos.y + 1}) {
 				pos = Coord{x: pos.x + 1, y: pos.y + 1}
 			} else {
 				sum++
 				stuck = true
-				sandList = append(sandList, pos)
+				notEmptyList.insert(pos)
 				if pos.x == 500 && pos.y == 0 {
 					fall = true
 				}
 			}
 		}
-		println(sum)
 	}
-	printGrid(grid)
 	println(sum)
 }
